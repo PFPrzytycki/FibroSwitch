@@ -32,8 +32,8 @@ for(cType in cTypes){
 for(cType in cTypes){
     for(cond in c("Sham","TAC")){
         tissue = paste0(cType,cond)
-        allEnhancerAcc = read.table(paste0("../Data/MouseHeartEnhancers/acc_frame_",tissue,"_E.txt"), header=TRUE)
+        allEnhancerAcc = read.table(paste0("acc_frame_",tissue,"_E.txt"), header=TRUE)
         SEcut = calculate_cutoff(allEnhancerAcc$acc, plotName = paste0(cType,cond,".pdf")) #ROSE
-        write.table(allEnhancerAcc[allEnhancerAcc$acc>SEcut$absolute,], paste0("../Data/MouseHeartEnhancers/acc_frame_",tissue,"_SE.txt"), row.names=FALSE, quote=FALSE, sep="\t")
+        write.table(allEnhancerAcc[allEnhancerAcc$acc>SEcut$absolute,], paste0("acc_frame_",tissue,"_SE.txt"), row.names=FALSE, quote=FALSE, sep="\t")
     }
 }
