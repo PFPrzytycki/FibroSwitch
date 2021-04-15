@@ -235,3 +235,60 @@ for(cType in c("Fibroblast", "Endothelial", "Myeloid")){
 	}
 }
 }
+					     
+#just write out all pseudorep peak combinations
+for(cType in cTypes){
+allFibroPeaks = fread(paste0("all",cType,"Peaks_intersect.bed"))
+allFibroPeak_Ranges = GRanges(allFibroPeaks$V1, IRanges(allFibroPeaks$V2, allFibroPeaks$V3))
+allFibroPeak_Ranges = allFibroPeak_Ranges[countOverlaps(allFibroPeak_Ranges,unlist(mmGenes))==0 & countOverlaps(allFibroPeak_Ranges,mmProm)==0]
+allFibroPeaksFrame = data.frame(allFibroPeak_Ranges)[,1:3]
+allFibroPeaksFrame = data.frame(loc=paste0(allFibroPeaksFrame$seqnames,":",allFibroPeaksFrame$start,"-",allFibroPeaksFrame$end))
+for(cond in c("Sham","TAC","JQ1","JQ1_Withdrawn")){
+    fPeaks = fread(paste0(cType,cond,"_distal_pseudoRep.bed"))
+    allFibroPeaksFrame = cbind(allFibroPeaksFrame, as.numeric(countOverlaps(allFibroPeak_Ranges, GRanges(fPeaks$V1, IRanges(as.numeric(fPeaks$V2), as.numeric(fPeaks$V3))))>0))
+}
+colnames(allFibroPeaksFrame) = c("loc","Sham","TAC","JQ1","JQ1_Withdrawn")
+test = sapply(0:1, function(Sham) sapply(0:1, function(TAC) sapply(0:1, function(JQ1) sapply(0:1, function(JQ1_Withdrawn){
+	thesePeaks = allFibroPeaksFrame[allFibroPeaksFrame$Sham==Sham & allFibroPeaksFrame$TAC==TAC & allFibroPeaksFrame$JQ1==JQ1 & allFibroPeaksFrame$JQ1_Withdrawn==JQ1_Withdrawn,]
+	thesePeaks = as(thesePeaks$loc, "GRanges")
+	if(length(thesePeaks)!=0){
+	write.table(data.frame(data.frame(thesePeaks)[,1:3],"","","*"), paste0(paste0(cType,Sham,TAC,JQ1,JQ1_Withdrawn,"_distal_pseudoRep.bed")), row.names=FALSE, col.names=FALSE, quote=FALSE, sep="\t")}
+	}))))
+
+}
+#or just the opening/closing
+for(comp in list(c("Sham", "TAC"), c("TAC", "JQ1"), c("JQ1", "JQ1_Withdrawn"))){
+    for(cType in cTypes){
+        for(cond in comp){
+            
+            fPeaks = fread(paste0(cType,cond,"_distal_pseudoRep.bed"))
+            
+            assign(paste0("allCondPeaks",cond), GRanges(fPeaks$V1, IRanges(as.numeric(fPeaks$V2), as.numeric(fPeaks$V3))))
+        }
+        #split cell types
+        file = paste(c(cType,comp,"closing"),collapse = "_")
+        thesePeaks = get(paste0("allCondPeaks",comp[1]))[countOverlaps(get(paste0("allCondPeaks",comp[1])), get(paste0("allCondPeaks",comp[2])))==0]
+        write.table(data.frame(data.frame(thesePeaks)[,1:3],"","","*"), paste0(file,"_distal_pseudoRep.bed"), quote = FALSE, col.names = FALSE, row.names = FALSE, sep="\t")
+        file = paste(c(cType,comp,"opening"),collapse = "_")
+        thesePeaks = get(paste0("allCondPeaks",comp[2]))[countOverlaps(get(paste0("allCondPeaks",comp[2])), get(paste0("allCondPeaks",comp[1])))==0]
+        write.table(data.frame(data.frame(thesePeaks)[,1:3],"","","*"), paste0(file,"_distal_pseudoRep.bed"), quote = FALSE, col.names = FALSE, row.names = FALSE, sep="\t")
+        file = paste(c(cType,comp,"same"),collapse = "_")
+        thesePeaks = reduce(union(get(paste0("allCondPeaks",comp[2]))[countOverlaps(get(paste0("allCondPeaks",comp[2])), get(paste0("allCondPeaks",comp[1])))>0], get(paste0("allCondPeaks",comp[1]))[countOverlaps(get(paste0("allCondPeaks",comp[1])), get(paste0("allCondPeaks",comp[2])))>0]))
+        write.table(data.frame(data.frame(thesePeaks)[,1:3],"","","*"), paste0(file,"_distal_pseudoRep.bed"), quote = FALSE, col.names = FALSE, row.names = FALSE, sep="\t")
+        
+    }
+}
+#and all peaks if needed
+for(cType in cTypes){
+    allFibroPeaks = fread(paste0("all",cType,"Peaks_intersect.bed"))
+    allFibroPeak_Ranges = GRanges(allFibroPeaks$V1, IRanges(allFibroPeaks$V2, allFibroPeaks$V3))
+    allFibroPeaksFrame = data.frame(allFibroPeak_Ranges)[,1:3]
+    allFibroPeaksFrame = data.frame(loc=paste0(allFibroPeaksFrame$seqnames,":",allFibroPeaksFrame$start,"-",allFibroPeaksFrame$end))
+    for(cond in c("Sham","TAC","JQ1","JQ1_Withdrawn")){
+        fPeaks = fread(paste0(cType,cond,"_distal.bed"))
+        allFibroPeaksFrame = cbind(allFibroPeaksFrame, as.numeric(countOverlaps(allFibroPeak_Ranges, GRanges(fPeaks$V1, IRanges(as.numeric(fPeaks$V2), as.numeric(fPeaks$V3))))>0))
+        
+        writeRanges = data.frame(allFibroPeak_Ranges[countOverlaps(allFibroPeak_Ranges, GRanges(fPeaks$V1, IRanges(as.numeric(fPeaks$V2), as.numeric(fPeaks$V3))))>0])
+        write.table(data.frame(writeRanges[,1:3],"","","*"), paste0(cType,cond,"_allPeaks_pseudoRep.bed"), row.names=FALSE, col.names=FALSE, quote=FALSE, sep="\t")
+    }
+}
