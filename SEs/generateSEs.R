@@ -27,3 +27,13 @@ for(cType in cTypes){
 		write.table(newEnhancers, paste0("newEnhancers_",cType,cond,".txt"), quote = FALSE, row.names = FALSE)
 	}
 }
+
+#select super enhancers in each condition
+for(cType in cTypes){
+    for(cond in c("Sham","TAC")){
+        tissue = paste0(cType,cond)
+        allEnhancerAcc = read.table(paste0("../Data/MouseHeartEnhancers/acc_frame_",tissue,"_E.txt"), header=TRUE)
+        SEcut = calculate_cutoff(allEnhancerAcc$acc, plotName = paste0(cType,cond,".pdf")) #ROSE
+        write.table(allEnhancerAcc[allEnhancerAcc$acc>SEcut$absolute,], paste0("../Data/MouseHeartEnhancers/acc_frame_",tissue,"_SE.txt"), row.names=FALSE, quote=FALSE, sep="\t")
+    }
+}
